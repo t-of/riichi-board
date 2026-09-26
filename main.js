@@ -164,9 +164,49 @@ function seatName(seat) { return settings.names[seat] || ROUND_NAMES[(seat - gam
 function enterTable() {
   if (!game) return;
   showScreen('screen-table');
-  renderTable();
+  layoutTable();
   requestWakeLock();
 }
+
+// 上・左・右のパネルは正方形でない箱を rotate すると見た目の幅と高さが入れ替わり、
+// 隣のパネルとぶつかる。実測サイズから、回したあとにちょうど収まる寸法を計算して置く。
+const tableWrap = document.getElementById('table-wrap');
+let panelSide = 100;
+function layoutTable() {
+  const W = tableWrap.clientWidth;
+  const H = tableWrap.clientHeight;
+  if (!W || !H) return;
+  const side = Math.max(84, Math.min(W, H) * 0.26);
+  panelSide = side;
+  const gap = 6;
+
+  // 上・下（180度回転は幅と高さが入れ替わらないので、そのまま置ける）
+  set(panelEls[2], { left: gap, top: gap, width: W - gap * 2, height: side, rotate: 180 });
+  set(panelEls[0], { left: gap, top: H - side - gap, width: W - gap * 2, height: side, rotate: 0 });
+
+  // 左・右（90度回転で幅と高さが入れ替わる分だけ、回す前の箱を縦横逆に作って中心をそろえる）
+  const midW = W - side * 2 - gap * 2;
+  const midH = H - side * 2 - gap * 2;
+  const leftCx = side / 2 + gap, cy = H / 2;
+  const rightCx = W - side / 2 - gap;
+  set(panelEls[3], { left: leftCx - midH / 2, top: cy - side / 2, width: midH, height: side, rotate: 90 });
+  set(panelEls[1], { left: rightCx - midH / 2, top: cy - side / 2, width: midH, height: side, rotate: -90 });
+
+  const mid = document.querySelector('.mid');
+  mid.style.left = `${side + gap}px`;
+  mid.style.top = `${side + gap}px`;
+  mid.style.width = `${Math.max(midW, 0)}px`;
+  mid.style.height = `${Math.max(midH, 0)}px`;
+  renderTable();
+}
+function set(el, { left, top, width, height, rotate }) {
+  el.style.left = `${left}px`;
+  el.style.top = `${top}px`;
+  el.style.width = `${width}px`;
+  el.style.height = `${height}px`;
+  el.style.transform = `rotate(${rotate}deg)`;
+}
+window.addEventListener('resize', () => { if (!document.getElementById('screen-table').hidden) layoutTable(); });
 
 function renderTable() {
   if (!game) return;
@@ -189,6 +229,7 @@ function renderTable() {
     }
     const scoreEl = document.createElement('div');
     scoreEl.className = 'panel__score';
+    scoreEl.style.fontSize = `${Math.round(Math.max(20, Math.min(38, panelSide * 0.4)))}px`;
     scoreEl.textContent = String(game.scores[seat]);
     el.appendChild(scoreEl);
     const riichiBtn = document.createElement('button');
