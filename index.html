@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f3d2e">
+  <meta name="description" content="麻雀の卓の真ん中に置く、点数計算と持ち点の表示盤。翻と符を押すと点数と「誰が誰にいくら払うか」が出て、確定すると 4 人の持ち点・本場・供託が自動で動く。麻雀 点数計算・点数表・持ち点・符計算。">
+  <title>RIICHI BOARD — 麻雀 点数計算：卓に置く点数表と持ち点</title>
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="RIICHI BOARD">
+  <meta property="og:title" content="RIICHI BOARD — 麻雀 点数計算：卓に置く点数表と持ち点">
+  <meta property="og:description" content="麻雀の卓の真ん中に置く、点数計算と持ち点の表示盤。翻と符を押すと点数と「誰が誰にいくら払うか」が出て、確定すると 4 人の持ち点・本場・供託が自動で動く。">
+  <meta property="og:url" content="https://t-of.github.io/riichi-board/">
+  <meta property="og:image" content="https://t-of.github.io/riichi-board/icons/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="ja_JP">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- apple-mobile-web-app-status-bar-style は付けない（black-translucent だと iOS 26 で上部が隠れる） -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="RIICHI BOARD">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+
+  <link rel="stylesheet" href="./webapp-kit/webapp-kit.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="stage" id="stage">
+
+      <!-- タイトル -->
+      <div class="screen screen--title" id="screen-title">
+        <div class="title-top">
+          <h1 class="title-logo">RIICHI BOARD</h1>
+          <p class="title-sub">卓に置く麻雀の点数計算</p>
+        </div>
+        <div class="title-buttons">
+          <button class="btn btn--big" id="btn-new-game">対局をはじめる</button>
+          <button class="btn" id="btn-continue-game" hidden>続きから</button>
+          <button class="btn" id="btn-score-table">点数表</button>
+          <button class="btn" id="btn-howto">使い方</button>
+        </div>
+        <div class="title-foot">
+          <button class="pill" data-wak="install" hidden>アプリにする</button>
+          <button class="pill" data-wak="share">共有</button>
+          <label class="sound-toggle"><input type="checkbox" id="sound-toggle" checked> 音</label>
+        </div>
+        <footer class="credit">
+          <a href="/">T.OF...</a> のアプリ ・ <a href="https://t-of.github.io/contact/">問い合わせ</a>
+        </footer>
+      </div>
+
+      <!-- はじめの設定 -->
+      <div class="screen screen--setup" id="screen-setup" hidden>
+        <h2 class="screen-title">はじめの設定</h2>
+        <div class="setup-form" id="setup-form">
+          <fieldset class="field">
+            <legend>長さ</legend>
+            <label><input type="radio" name="length" value="hanchan"> 半荘</label>
+            <label><input type="radio" name="length" value="tonpu"> 東風戦</label>
+          </fieldset>
+          <fieldset class="field">
+            <legend>持ち点</legend>
+            <label><input type="radio" name="start" value="25000"> 25000</label>
+            <label><input type="radio" name="start" value="30000"> 30000</label>
+            <label><input type="radio" name="start" value="other"> その他 <input type="number" id="start-other" step="100" inputmode="numeric"></label>
+          </fieldset>
+          <fieldset class="field">
+            <legend>切り上げ満貫</legend>
+            <label><input type="radio" name="kiriage" value="on"> オン</label>
+            <label><input type="radio" name="kiriage" value="off"> オフ</label>
+          </fieldset>
+          <fieldset class="field">
+            <legend>名前（なくてよい）</legend>
+            <label>席0 <input type="text" class="name-input" data-seat="0" maxlength="8" placeholder="東"></label>
+            <label>席1 <input type="text" class="name-input" data-seat="1" maxlength="8" placeholder="南"></label>
+            <label>席2 <input type="text" class="name-input" data-seat="2" maxlength="8" placeholder="西"></label>
+            <label>席3 <input type="text" class="name-input" data-seat="3" maxlength="8" placeholder="北"></label>
+          </fieldset>
+          <fieldset class="field">
+            <legend>起家</legend>
+            <div class="seat-picker" id="seat-picker">
+              <button class="seat-picker__btn seat-picker__btn--top" data-seat="2">上</button>
+              <button class="seat-picker__btn seat-picker__btn--right" data-seat="1">右</button>
+              <button class="seat-picker__btn seat-picker__btn--bottom" data-seat="0">下</button>
+              <button class="seat-picker__btn seat-picker__btn--left" data-seat="3">左</button>
+            </div>
+          </fieldset>
+        </div>
+        <div class="setup-buttons">
+          <button class="btn btn--big" id="btn-setup-go">はじめる</button>
+          <button class="btn btn--ghost" id="btn-setup-back">やめる</button>
+        </div>
+      </div>
+
+      <!-- 卓 -->
+      <div class="screen screen--table" id="screen-table" hidden>
+        <div class="table-wrap" id="table-wrap">
+          <div class="panel panel--top" data-seat="2"></div>
+          <div class="panel panel--right" data-seat="1"></div>
+          <div class="panel panel--bottom" data-seat="0"></div>
+          <div class="panel panel--left" data-seat="3"></div>
+          <div class="mid">
+            <div class="mid__round" id="round-info">東1局 0本場</div>
+            <div class="mid__kyotaku" id="kyotaku-info">供託 0</div>
+            <div class="mid__buttons">
+              <button class="btn btn--win" id="btn-win">あがり</button>
+              <button class="btn btn--ryuukyoku" id="btn-ryuukyoku">流局</button>
+            </div>
+            <div class="mid__small">
+              <button class="btn btn--small" id="btn-undo">戻す</button>
+              <button class="btn btn--small" id="btn-menu">メニュー</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- あがりの入力（シート） -->
+      <div class="sheet" id="sheet-win" hidden>
+        <div class="sheet__body" id="sheet-win-body">
+          <h2 class="sheet__title">あがり</h2>
+          <div class="step" id="win-step-who">
+            <p class="step__label">誰があがった？</p>
+            <div class="who-grid" id="win-who-grid"></div>
+          </div>
+          <div class="step" id="win-step-type" hidden>
+            <p class="step__label">ロン / ツモ</p>
+            <div class="choice-row">
+              <button class="choice" data-type="ron">ロン</button>
+              <button class="choice" data-type="tsumo">ツモ</button>
+            </div>
+            <div class="who-grid" id="win-loser-grid" hidden></div>
+          </div>
+          <div class="step" id="win-step-han" hidden>
+            <p class="step__label">翻</p>
+            <div class="choice-row" id="win-han-row"></div>
+          </div>
+          <div class="step" id="win-step-fu" hidden>
+            <p class="step__label">符</p>
+            <div class="choice-row" id="win-fu-row"></div>
+          </div>
+          <div class="win-result" id="win-result" hidden></div>
+          <div class="sheet__buttons">
+            <button class="btn btn--big" id="btn-win-confirm" disabled>確定</button>
+            <button class="btn btn--ghost" id="btn-win-cancel">やめる</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 流局の入力（シート） -->
+      <div class="sheet" id="sheet-ryuukyoku" hidden>
+        <div class="sheet__body">
+          <h2 class="sheet__title">流局</h2>
+          <p class="step__label">聴牌 / ノーテン</p>
+          <div class="tenpai-grid" id="ryuukyoku-grid"></div>
+          <div class="win-result" id="ryuukyoku-result"></div>
+          <div class="sheet__buttons">
+            <button class="btn btn--big" id="btn-ryuukyoku-confirm">確定</button>
+            <button class="btn" id="btn-chuuto">途中流局</button>
+            <button class="btn btn--ghost" id="btn-ryuukyoku-cancel">やめる</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- メニュー（シート） -->
+      <div class="sheet" id="sheet-menu" hidden>
+        <div class="sheet__body">
+          <h2 class="sheet__title">メニュー</h2>
+          <div class="menu-list">
+            <button class="btn" id="btn-menu-correct">点を直す</button>
+            <button class="btn" id="btn-menu-settings">設定</button>
+            <button class="btn" id="btn-menu-howto">使い方</button>
+            <button class="btn" id="btn-menu-end">ここで終わる</button>
+            <button class="btn" id="btn-menu-title">タイトルへ</button>
+          </div>
+          <button class="btn btn--ghost" id="btn-menu-close">閉じる</button>
+        </div>
+      </div>
+
+      <!-- 点を直す（シート） -->
+      <div class="sheet" id="sheet-correct" hidden>
+        <div class="sheet__body">
+          <h2 class="sheet__title">点を直す</h2>
+          <div class="correct-grid" id="correct-grid"></div>
+          <div class="correct-row">
+            <label>本場 <input type="number" id="correct-honba" inputmode="numeric"></label>
+            <label>供託 <input type="number" id="correct-kyotaku" inputmode="numeric"></label>
+            <label>親 <select id="correct-dealer"><option value="0">席0</option><option value="1">席1</option><option value="2">席2</option><option value="3">席3</option></select></label>
+          </div>
+          <div class="sheet__buttons">
+            <button class="btn btn--big" id="btn-correct-apply">直す</button>
+            <button class="btn btn--ghost" id="btn-correct-cancel">やめる</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 設定（シート） -->
+      <div class="sheet" id="sheet-settings" hidden>
+        <div class="sheet__body">
+          <h2 class="sheet__title">設定</h2>
+          <label class="sound-toggle"><input type="checkbox" id="settings-sound"> 音</label>
+          <fieldset class="field">
+            <legend>切り上げ満貫</legend>
+            <label><input type="radio" name="settings-kiriage" value="on"> オン</label>
+            <label><input type="radio" name="settings-kiriage" value="off"> オフ</label>
+          </fieldset>
+          <div class="sheet__buttons">
+            <button class="btn btn--big" id="btn-settings-close">閉じる</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果 -->
+      <div class="screen screen--result" id="screen-result" hidden>
+        <h2 class="screen-title">結果</h2>
+        <p class="result-hands" id="result-hands"></p>
+        <div class="result-list" id="result-list"></div>
+        <div class="setup-buttons">
+          <button class="btn" data-wak="share" id="btn-result-share">共有</button>
+          <button class="btn btn--big" id="btn-result-continue">続ける</button>
+          <button class="btn" id="btn-result-new">新しい対局</button>
+        </div>
+      </div>
+
+      <!-- 点数表 -->
+      <div class="screen screen--score-table" id="screen-score-table" hidden>
+        <h2 class="screen-title">点数表</h2>
+        <div class="choice-row">
+          <button class="choice is-active" id="btn-table-dealer-off" data-dealer="0">子</button>
+          <button class="choice" id="btn-table-dealer-on" data-dealer="1">親</button>
+        </div>
+        <label class="sound-toggle"><input type="checkbox" id="table-kiriage"> 切り上げ満貫</label>
+        <div class="score-table-wrap">
+          <table class="score-table" id="score-table"></table>
+        </div>
+        <table class="score-table score-table--big" id="score-table-big"></table>
+        <button class="btn btn--ghost" id="btn-score-table-back">タイトルへ</button>
+      </div>
+
+      <!-- 使い方 -->
+      <div class="screen screen--howto" id="screen-howto" hidden>
+        <h2 class="screen-title">使い方</h2>
+        <ol class="howto-list">
+          <li>スマホを卓の真ん中に平らに置く。4 辺に 4 人の持ち点が、それぞれの人の向きで出る。画面の回転をロックしてから置くとよい。</li>
+          <li>リーチした人は、自分の辺の「リーチ」を押す（1000 点が供託に移る）。</li>
+          <li>局が終わったら、真ん中の「あがり」か「流局」を押す。あがった人・放銃した人・翻・符を押して確定すると、点数が自動で動く。</li>
+          <li>間違えたら「戻す」。1 回前の状態にちょうど戻る。</li>
+        </ol>
+        <button class="btn btn--ghost" id="btn-howto-back">もどる</button>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="./webapp-kit/webapp-kit.js"></script>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
